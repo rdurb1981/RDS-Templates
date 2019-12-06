@@ -2,7 +2,7 @@
 .SYNOPSIS
 	This is a sample script for to deploy the required resources for to schedule basic scale in Microsoft Azure.
 .DESCRIPTION
-	This sample script will create the scale script execution trigger required resources in Microsoft Azure. Resources are azure azure logic app for each hostpool.
+	This sample script will create the scale script execution trigger required resources in Microsoft Azure. Resources are azure logic app for each hostpool.
     Run this PowerShell script in adminstrator mode
     This script depends on Az PowerShell module. To install Az module execute the following command. Use "-AllowClobber" parameter if you have more than one version of PowerShell modules installed.
 	
@@ -69,11 +69,18 @@
 .PARAMETER ResourcegroupName
  Required
  Provide the name of the resouce gorup name for to create logic app.
+.PARAMETER ConnectionAssetName
+ Required
+ Provide name of the AzureRunAccount which is created manually from azure portal.
+.PARAMETER WebhookURI
+ Required
+ Provide URI of the azure automation account webhook
+
 
  Example: .\createazurelogicapp.ps1  -AADTenantID "Your Azure TenantID" -SubscriptionID "Your Azure SubscriptionID" -TenantGroupName "Name of the WVD Tenant Group Name" ` 
  -TenantName "Name of the WVD Tenant Name" -HostPoolName "Name of the HostPoolName" -PeakLoadBalancingType "Load balancing type in Peak hours" -MaintenanceTagName "Name of the Tag Name" -RecurrenceInterval "Repeat job every and select the appropriate period of time in minutes (Ex. 15)" ` 
  -BeginPeakTime "9:00" -EndPeakTime "18:00" -TimeDifference "+5:30" -SessionThresholdPerCPU 6 -MinimumNumberOfRDSH 2 -LimitSecondsToForceLogOffUser 20 –LogOffMessageTitle "System Under Maintenance" -LogOffMessageBody "Please save your work and logoff!" `
- –Location "Central US" -LogAnalyticsWorkspaceId "log analytic workspace id" -LogAnalyticsPrimaryKey "log analytic workspace primary key" -ResourcegroupName "Name of the resoure group"
+ –Location "Central US" -LogAnalyticsWorkspaceId "log analytic workspace id" -LogAnalyticsPrimaryKey "log analytic workspace primary key" -ResourcegroupName "Name of the resoure group" -ConnectionAssetName $ConnectionAssetName -WebhookURI "URI of the Azure automation account Webhook"
 
 #>
 param(

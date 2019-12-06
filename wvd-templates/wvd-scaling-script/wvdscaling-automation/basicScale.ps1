@@ -13,8 +13,6 @@ if ($WebHookData) {
 	# Collect individual headers. Input converted from JSON.
 	$From = $WebhookHeaders.From
 	$Input = (ConvertFrom-Json -InputObject $WebhookBody)
-	Write-Verbose "WebhookBody: $Input"
-	Write-Output -InputObject ('Runbook started from webhook {0} by {1}.' -f $WebhookName,$From)
 }
 else
 {
@@ -42,7 +40,6 @@ $RDBrokerURL = $Input.RDBrokerURL
 $AutomationAccountName = $Input.AutomationAccountName
 $ConnectionAssetName = $Input.ConnectionAssetName
 
-
 Set-ExecutionPolicy -ExecutionPolicy Undefined -Scope Process -Force -Confirm:$false
 Set-ExecutionPolicy -ExecutionPolicy Unrestricted -Scope LocalMachine -Force -Confirm:$false
 
@@ -67,7 +64,7 @@ function Convert-UTCtoLocalTime
 	$ConvertedTime = $UniversalTime.AddHours($TimeDifferenceHours).AddMinutes($TimeDifferenceMinutes)
 	return $ConvertedTime
 }
-# Function for to add logs to log analytics workspace
+
 # Function for to add logs to log analytics workspace
 function Add-LogEntry
 {
@@ -108,19 +105,18 @@ function Add-LogEntry
 
 #Collect the credentials from Azure Automation Account Assets
 #$Credentials = Get-AutomationPSCredential -Name $CredentialAssetName
-$Connection = Get-AzAutomationConnection -Name $ConnectionAssetName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
-
+$Connection = Get-AutomationConnection -Name $ConnectionAssetName
 #Authenticating to Azure
 try {
 	Clear-AzContext -Force
-	$AZAuthentication = Connect-AzAccount -ApplicationId $Connection.FieldDefinitionValues.ApplicationId -TenantId $AADTenantId -CertificateThumbprint $Connection.FieldDefinitionValues.CertificateThumbprint -ServicePrincipal
+	$AZAuthentication = Connect-AzAccount -ApplicationId $Connection.ApplicationId -TenantId $AADTenantId -CertificateThumbprint $Connection.CertificateThumbprint -ServicePrincipal
 
 	#Select Azure Subscription
 	$ListofContexts = Get-AzContext
 	foreach ($Context in $ListofContexts) {
 		[string]$NameOftheContext = $Context.Name
 		if ($NameOftheContext.Contains($SubscriptionID)) {
-			$AzSubscription = Select-azSubscription -Context $Context -Force
+			$AzSubscription = Select-AzSubscription -Context $Context -Force
 		}
 	}
 }
@@ -144,7 +140,7 @@ Add-LogEntry -LogMessageObj $LogMessage -LogAnalyticsWorkspaceId $LogAnalyticsWo
 #Authenticating to WVD
 try {
 	#$WVDAuthentication = Add-RdsAccount -DeploymentUrl $RDBrokerURL -Credential $Credentials -TenantId $AADTenantId -ServicePrincipal
-	$WVDAuthentication = Add-RdsAccount -DeploymentUrl $RDBrokerURL -ApplicationId $Connection.FieldDefinitionValues.ApplicationId -CertificateThumbprint $Connection.FieldDefinitionValues.CertificateThumbprint -AADTenantId $AadTenantId
+	$WVDAuthentication = Add-RdsAccount -DeploymentUrl $RDBrokerURL -ApplicationId $Connection.ApplicationId -CertificateThumbprint $Connection.CertificateThumbprint -AADTenantId $AadTenantId
 }
 catch {
 	Write-Output "Failed to authenticate WVD: $($_.exception.message)"
@@ -953,13 +949,13 @@ if ($HostpoolInfo.LoadBalancerType -eq "DepthFirst")
 			Remove-AzAutomationVariable -Name "OffPeakUsage-MinimumNoOfRDSH" -ResourceGroupName $AutomationAccount.ResourceGroupName -AutomationAccountName $AutomationAccount.AutomationAccountName
 		}
 		###############Peak hours start the Session Hosts#########
-		PeakHours-StartSessionHosts-DF -TenantName $TenantName -HostPoolName $HostpoolName -SessionhostLimit $SessionhostLimit -HostpoolMaxSessionLimit $HostpoolMaxSessionLimit -MinimumNoOfRDSH $MinimumNumberOfRDSH -MaintenanceTagName $MaintenanceTagName
+		PeakHours-StartSessionHosts-DF -TenantName $TenantName -HostPoolName $HostpoolName -SessionhostLimit $SessionhostLimit -HostpoolMaxSessionLimit $HostpoolMaxSessionLimit -MinimumNumberOfRDSH $MinimumNumberOfRDSH -MaintenanceTagName $MaintenanceTagName
 	}
 	else {
 		Write-Output "It is Off-peak hours"
 		$LogMessage = @{ hostpoolName_s = $HostpoolName; logmessage_s = "It is Off-peak hours" }
 		Add-LogEntry -LogMessageObj $LogMessage -LogAnalyticsWorkspaceId $LogAnalyticsWorkspaceId -LogAnalyticsPrimaryKey $LogAnalyticsPrimaryKey -logType "WVDTenantScale_CL" -TimeDifferenceInHours $TimeDifference
-		Write-Output "It is off-peak hours. Starting to scale down RD session hosts..."
+		Write-Output "Off-peak hours. Starting to scale down RD session hosts..."
 		$LogMessage = @{ hostpoolName_s = $HostpoolName; logmessage_s = "It is off-peak hours. Starting to scale down RD session hosts..." }
 		Add-LogEntry -LogMessageObj $LogMessage -LogAnalyticsWorkspaceId $LogAnalyticsWorkspaceId -LogAnalyticsPrimaryKey $LogAnalyticsPrimaryKey -logType "WVDTenantScale_CL" -TimeDifferenceInHours $TimeDifference
 		#Check the number running session hosts of hostpool
@@ -1018,7 +1014,7 @@ else {
 			Remove-AzAutomationVariable -Name "OffPeakUsage-MinimumNoOfRDSH" -ResourceGroupName $AutomationAccount.ResourceGroupName -AutomationAccountName $AutomationAccount.AutomationAccountName
 		}
 		##############Peak Hours starting session hosts######
-		PeakHours-StartSessionHosts-BF -TenantName $TenantName -HostPoolName $HostpoolName -MinimumNoOfRDSH $MinimumNumberOfRDSH -SessionThresholdPerCPU $SessionThresholdPerCPU -MaintenanceTagName $MaintenanceTagName
+		PeakHours-StartSessionHosts-BF -TenantName $TenantName -HostPoolName $HostpoolName -MinimumNumberOfRDSH $MinimumNumberOfRDSH -SessionThresholdPerCPU $SessionThresholdPerCPU -MaintenanceTagName $MaintenanceTagName
 	}
 	else
 	{

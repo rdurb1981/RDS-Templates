@@ -319,7 +319,7 @@ $CustomLogWVDTenantScale = @"
 
 
 	Write-Output "Log analytics workspace id:$LogAnalyticsWorkspaceId"
-	Write-Output "Log analytics workspace id:$LogAnalyticsPrimaryKey"
+	Write-Output "Log analytics workspace primarykey:$LogAnalyticsPrimaryKey"
 	Write-Output "Webhook URI: $($WebhookURI.value)"
 
 }
