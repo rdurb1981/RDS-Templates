@@ -33,7 +33,7 @@
 .NOTES
 If you providing existing automation account. You need provide existing automation account ResourceGroupName for ResourceGroupName parameter.
  
- Example: .\createautomationaccountandloganalyticworkspace.ps1  -SubscriptionID "Your Azure SubscriptionID" -ResourceGroupName "Name of the resource group" -AutomationAccountName "Name of the automation account name" -Location "The datacenter location of the resources" -WorkspaceName "Name of the Workspace" 
+ Example: .\createautomationaccountandloganalyticworkspace.ps1  -SubscriptionID "Your Azure SubscriptionID" -ResourceGroupName "Name of the resource group" -AutomationAccountName "Name of the automation account name" -Location "The datacenter location of the resources" -WorkspaceName "Provide existing log analytic workspace name" 
 
 #>
 param(
@@ -50,8 +50,8 @@ param(
 	[Parameter(mandatory = $false)]
 	[string]$Location = "West US2",
 
-	[Parameter(mandatory = $false)]
-	[string]$WorkspaceName = "WVDAutoScale-LAW"
+	[Parameter(mandatory = $true)]
+	[string]$WorkspaceName
 
 )
 
