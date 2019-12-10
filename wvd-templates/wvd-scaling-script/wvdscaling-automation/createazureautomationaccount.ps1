@@ -37,20 +37,20 @@ If you providing existing automation account. You need provide existing automati
 
 #>
 param(
-	[Parameter(mandatory = $true)]
+	[Parameter(mandatory = $True)]
 	[string]$SubscriptionId,
 
-	[Parameter(mandatory = $false)]
+	[Parameter(mandatory = $False)]
 	[string]$ResourceGroupName = "WVDAutoScaleResourceGroup",
 
 
-	[Parameter(mandatory = $false)]
+	[Parameter(mandatory = $False)]
 	$AutomationAccountName = "WVDAutoScaleAutomationAccount",
 
-	[Parameter(mandatory = $false)]
+	[Parameter(mandatory = $False)]
 	[string]$Location = "West US2",
 
-	[Parameter(mandatory = $true)]
+	[Parameter(mandatory = $False)]
 	[string]$WorkspaceName
 
 )
@@ -102,13 +102,12 @@ if ($RoleAssignment.RoleDefinitionName -eq "Owner" -or $RoleAssignment.RoleDefin
 		Write-Output "Automation Account was created with name $AutomationAccountName"
 	}
 
-
 	$RequiredModules = @(
 		[pscustomobject]@{ ModuleName = 'Az.Accounts'; ModuleVersion = '1.6.4' }
 		[pscustomobject]@{ ModuleName = 'Microsoft.RDInfra.RDPowershell'; ModuleVersion = '1.0.1288.1' }
 		[pscustomobject]@{ ModuleName = 'OMSIngestionAPI'; ModuleVersion = '1.6.0' }
-		[pscustomobject]@{ ModuleName = 'Az.Compute'; ModuleVersion = '3.0.0' }
-		[pscustomobject]@{ ModuleName = 'Az.Resources'; ModuleVersion = '1.7.1' }
+		[pscustomobject]@{ ModuleName = 'Az.Compute'; ModuleVersion = '3.1.0' }
+		[pscustomobject]@{ ModuleName = 'Az.Resources'; ModuleVersion = '1.8.0' }
 		[pscustomobject]@{ ModuleName = 'Az.Automation'; ModuleVersion = '1.3.4' }
 	)
 
@@ -208,7 +207,7 @@ if ($RoleAssignment.RoleDefinitionName -eq "Owner" -or $RoleAssignment.RoleDefin
 	#$Runbook = Get-AzAutomationRunbook -Name $RunbookName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName -ErrorAction SilentlyContinue
 	#if($Runbook -eq $null){
 	#Creating a runbook and published the basic Scale script file
-	$DeploymentStatus = New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateUri "$ScriptRepoLocation/runbookCreationTemplate.json" -DeploymentDebugLogLevel All -existingAutomationAccountName $AutomationAccountName -RunbookName $RunbookName -Force -Verbose
+	$DeploymentStatus = New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateUri "$ScriptRepoLocation/runbookCreationTemplate.json" -existingAutomationAccountName $AutomationAccountName -RunbookName $RunbookName -Force -Verbose
 	if ($DeploymentStatus.ProvisioningState -eq "Succeeded") {
 
 		#Check if the Webhook URI exists in automation variable
@@ -236,14 +235,14 @@ if ($RoleAssignment.RoleDefinitionName -eq "Owner" -or $RoleAssignment.RoleDefin
 			Check-IfModuleIsImported -ModuleName $Module.ModuleName -ResourceGroupName $ResourceGroupName -AutomationAccountName $AutomationAccountName
 		}
 	}
-
+if($WorkspaceName){
 	#Check if the log analytic workspace is exist
 	$LAWorkspace = Get-AzOperationalInsightsWorkspace | Where-Object { $_.Name -eq $WorkspaceName }
 	if (!$LAWorkspace) {
 		Write-Error "Provided log analytic workspace doesn't exist in your Subscription."
 		exit
 	}
-	$WorkSpace = Get-AzOperationalInsightsWorkspaceSharedKeys -ResourceGroupName $LAWorkspace.ResourceGroupName -Name $WorkspaceName
+	$WorkSpace = Get-AzOperationalInsightsWorkspaceSharedKeys -ResourceGroupName $LAWorkspace.ResourceGroupName -Name $WorkspaceName -WarningAction Ignore
 	$LogAnalyticsPrimaryKey = $Workspace.PrimarySharedKey
 	$LogAnalyticsWorkspaceId = (Get-AzOperationalInsightsWorkspace -ResourceGroupName $LAWorkspace.ResourceGroupName -Name $workspaceName).CustomerId.GUID
 
@@ -318,10 +317,14 @@ $CustomLogWVDTenantScale = @"
 	Post-LogAnalyticsData -customerId $LogAnalyticsWorkspaceId -sharedKey $LogAnalyticsPrimaryKey -Body ([System.Text.Encoding]::UTF8.GetBytes($CustomLogWVDTenantScale)) -logType $TenantScaleLogType
 
 
-	Write-Output "Log analytics workspace id:$LogAnalyticsWorkspaceId"
-	Write-Output "Log analytics workspace primarykey:$LogAnalyticsPrimaryKey"
+	Write-Output "Log Analytics workspace id:$LogAnalyticsWorkspaceId"
+	Write-Output "Log Analytics workspace primarykey:$LogAnalyticsPrimaryKey"
+	Write-Output "Automation Account Name:$AutomationAccountName"
 	Write-Output "Webhook URI: $($WebhookURI.value)"
-
+}else{
+	Write-Output "Automation Account Name:$AutomationAccountName"
+	Write-Output "Webhook URI: $($WebhookURI.value)"
+}
 }
 else
 {

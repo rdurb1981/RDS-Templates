@@ -8,7 +8,6 @@
 	
     PS C:\>Install-Module Az  -AllowClobber
     
-
 .PARAMETER TenantGroupName
  Optional
  Provide the name of the tenant group in the Windows Virtual Desktop deployment.
@@ -18,9 +17,9 @@
 .PARAMETER HostpoolName
  Required
  Provide the name of the WVD Host Pool.
-.PARAMETER PeakLoadBalancingType
+.PARAMETER AutomationAccountName
  Required
- Provide the peakLoadBalancingType. Hostpool session Load Balancing Type in Peak Hours.
+ Provide the name of the name of the automation account which is published basic scale script.
 .PARAMETER RecurrenceInterval
  Required
  Provide the RecurrenceInterval. Scheduler job will run recurrenceInterval basis, so provide recurrence in minutes.
@@ -61,10 +60,10 @@
  Required
  Provide the Message body to send to a user before forcing logoff.
 .PARAMETER LogAnalyticsWorkspaceId
- Required
+ Optional
  Provide the log anayltic workspace id.
 .PARAMETER LogAnalyticsPrimaryKey
- Required
+ Optional
  Provide the log anayltic workspace primarykey.
 .PARAMETER ResourcegroupName
  Required
@@ -76,11 +75,10 @@
  Required
  Provide URI of the azure automation account webhook
 
-
  Example: .\createazurelogicapp.ps1  -AADTenantID "Your Azure TenantID" -SubscriptionID "Your Azure SubscriptionID" -TenantGroupName "Name of the WVD Tenant Group Name" ` 
  -TenantName "Name of the WVD Tenant Name" -HostPoolName "Name of the HostPoolName" -PeakLoadBalancingType "Load balancing type in Peak hours" -MaintenanceTagName "Name of the Tag Name" -RecurrenceInterval "Repeat job every and select the appropriate period of time in minutes (Ex. 15)" ` 
  -BeginPeakTime "9:00" -EndPeakTime "18:00" -TimeDifference "+5:30" -SessionThresholdPerCPU 6 -MinimumNumberOfRDSH 2 -LimitSecondsToForceLogOffUser 20 –LogOffMessageTitle "System Under Maintenance" -LogOffMessageBody "Please save your work and logoff!" `
- –Location "Central US" -LogAnalyticsWorkspaceId "log analytic workspace id" -LogAnalyticsPrimaryKey "log analytic workspace primary key" -ResourcegroupName "Name of the resoure group" -ConnectionAssetName $ConnectionAssetName -WebhookURI "URI of the Azure automation account Webhook"
+ –Location "Central US" -LogAnalyticsWorkspaceId "log analytic workspace id" -LogAnalyticsPrimaryKey "log analytic workspace primary key" -ResourcegroupName "Name of the resoure group" -ConnectionAssetName "Name of the azure automation account connection" -WebhookURI "URI of the Azure automation account Webhook" -AutomationAccountName	"Name of the automation account which is basic scale script published"
 
 #>
 param(
@@ -88,16 +86,16 @@ param(
 	[string]$TenantGroupName = "Default Tenant Group",
 
 	[Parameter(mandatory = $True)]
-	[string]$HostpoolName,
-
-	[Parameter(mandatory = $True)]
 	[string]$TenantName,
 
 	[Parameter(mandatory = $True)]
-	[string]$WebhookURI,
+	[string]$HostpoolName,
 
 	[Parameter(mandatory = $True)]
-	[string]$PeakLoadBalancingType,
+	[string]$AutomationAccountName,
+
+	[Parameter(mandatory = $True)]
+	[string]$WebhookURI,
 
 	[Parameter(mandatory = $True)]
 	[int]$RecurrenceInterval,
@@ -129,10 +127,10 @@ param(
 	[Parameter(mandatory = $True)]
 	[int]$LimitSecondsToForceLogOffUser,
 
-	[Parameter(mandatory = $True)]
+	[Parameter(mandatory = $False)]
 	[string]$LogAnalyticsWorkspaceId,
 
-	[Parameter(mandatory = $True)]
+	[Parameter(mandatory = $False)]
 	[string]$LogAnalyticsPrimaryKey,
 
 	[Parameter(mandatory = $True)]
@@ -151,7 +149,7 @@ param(
 	[string]$LogOffMessageBody
 )
 
-#Static variables
+#Initializing variables
 $RDBrokerURL = "https://rdbroker.wvd.microsoft.com"
 $ScriptRepoLocation = "https://raw.githubusercontent.com/Azure/RDS-Templates/ptg-wvdautoscaling-automation/wvd-templates/wvd-scaling-script/wvdscaling-automation"
 
@@ -244,7 +242,6 @@ if ($RoleAssignment.RoleDefinitionName -eq "Owner" -or $RoleAssignment.RoleDefin
 			"TenantGroupName" = $TenantGroupName;
 			"TenantName" = $TenantName;
 			"HostPoolName" = $HPName;
-			"peakLoadBalancingType" = $peakLoadBalancingType;
 			"MaintenanceTagName" = $MaintenanceTagName;
 			"LogAnalyticsWorkspaceId" = $LogAnalyticsWorkspaceId;
 			"LogAnalyticsPrimaryKey" = $LogAnalyticsPrimaryKey;
@@ -259,7 +256,7 @@ if ($RoleAssignment.RoleDefinitionName -eq "Owner" -or $RoleAssignment.RoleDefin
 			"LogOffMessageBody" = $LogOffMessageBody }
 		$RequestBodyJson = $RequestBody | ConvertTo-Json
 		$LogicAppName = ($HPName + "_" + "Autoscale" + "_" + "Scheduler").Replace(" ","")
-		$SchedulerDeployment = New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateUri "$ScriptRepoLocation/azureLogicAppCreation.json" -logicappname $LogicAppName -webhookURI $WebhookURI.Replace("`n","").Replace("`r","") -actionSettingsBody $RequestBodyJson -recurrenceInterval $RecurrenceInterval -DeploymentDebugLogLevel All -Verbose
+		$SchedulerDeployment = New-AzResourceGroupDeployment -ResourceGroupName $ResourceGroupName -TemplateUri "$ScriptRepoLocation/azureLogicAppCreation.json" -logicappname $LogicAppName -webhookURI $WebhookURI.Replace("`n","").Replace("`r","") -actionSettingsBody $RequestBodyJson -recurrenceInterval $RecurrenceInterval -Verbose
 		if ($SchedulerDeployment.ProvisioningState -eq "Succeeded") {
 			Write-Output "$HPName hostpool successfully configured with logic app scheduler"
 		}
