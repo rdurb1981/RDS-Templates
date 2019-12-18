@@ -284,7 +284,7 @@
             "apiVersion": "2018-10-01",
             "condition": "[equals(parameters('enablePersistentDesktop'),bool('False'))]",
             "type": "Microsoft.Compute/availabilitySets",
-            "name": "[concat(variables('rdshPrefix'), 'availabilitySet')]",
+            "name": "[concat('avset',variables('rdshPrefix'))]",
             "location": "[parameters('location')]",
             "properties": {
                 "platformUpdateDomainCount": 5,
