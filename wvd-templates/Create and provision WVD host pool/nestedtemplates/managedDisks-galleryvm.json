@@ -202,7 +202,7 @@
                     },
                     "osDisk": {
                         "createOption": "FromImage",
-                        "name": "[concat(parameters('rdshPrefix'), copyindex(),'_XXXX')]",
+                        "name": "[concat(parameters('rdshPrefix'), copyindex(),'_ManagedOSDisk')]",
                         "managedDisk": {
                             "storageAccountType": "[variables('storageAccountType')]"
                         }
