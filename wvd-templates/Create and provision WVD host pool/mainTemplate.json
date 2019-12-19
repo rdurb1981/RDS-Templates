@@ -254,7 +254,7 @@
     },
     "variables": {
         "rdshManagedDisks": "[if(equals(parameters('rdshImageSource'), 'CustomVHD'), parameters('rdshUseManagedDisks'), bool('true'))]",
-        "rdshPrefix": "[concat(parameters('rdshNamePrefix'),'-')]",
+        "rdshPrefix": "[concat(parameters('rdshNamePrefix'))]",
         "avSetSKU": "[if(variables('rdshManagedDisks'), 'Aligned', 'Classic')]",
         "existingDomainUsername": "[first(split(parameters('existingDomainUPN'), '@'))]",
         "vhds": "[concat('vhds','/', variables('rdshPrefix'))]",
